@@ -1,247 +1,328 @@
-from enum import Enum
-from lib2to3.pgen2 import token
 import os
-import re
-
-class L_tokens(Enum):
-    TK_MENOR = "<"
-    TK_E_NUMERO = "Numero"
-    TK_MAYOR = ">"
-    TK_NUMERO = "[0-9]*"
-    TK_BARRAINV = "/"
-    TK_E_OPERACION = "Operacion"
-    TK_IGUAL = "="
-    TK_OP_SUMA = "SUMA",
-    TK_OP_RESTA = "RESTA"
-    TK_OP_MULTIPLICACION = "MULTIPLICACION"
-    TK_OP_DIVISION = "DIVISION"
-    TK_E_TIPO = "Tipo"
-
 
 class Analizador:
-    def __init__(self):
-        self.cadena = ""
-        self.linea = 0
-        self.columna = 0  
-        self.lista_cadena = []
-        self.tmp_cadena = ""
+    def __init__(self, entrada:str):
+        self.lineas = entrada #ENTRADA
+        self.index = 0 #POSICION DE CARACTERES EN LA ENTRADA
+        self.fila = 0 #FILA ACTUAL
+        self.columna = 0 #COLUMNA ACTUAL
+        self.ListaErrores = [] # LISTA PARA GUARDAR ERRORES
 
-    def quitar(self, _cadena :str, _num : int):
-        _tmp = ""
-        count = 0
-        for i in _cadena:
-            if count >= _num:
-                _tmp += i
+    def _token(self, token:str, estado_actual:str, estado_sig:str):
+        if self.lineas[self.index] != " ":
+            text = self._juntar(self.index, len(token))
+            if self._analizar(token, text):
+                self.index += len(token) - 1
+                self.columna += len(token) - 1
+                return estado_sig
             else:
-                self.tmp_cadena += i 
-            count += 1
-        return _tmp
-
-    def aumentarLinea(self):
-        _tmp = self.lista_cadena[self.linea]
-        #print(_tmp , " == ", self.tmp_cadena)
-        if _tmp == self.tmp_cadena:
-            self.linea += 1
-            self.tmp_cadena = ""
-            self.columna = 0 
-
-    def esLaetiqueta(self, _cadena : str, _etiqueta : str):
-        tmp = ""
-        count = 0
-        for i in _cadena:
-            if count < len(_etiqueta):
-                tmp += i
-            count += 1
-
-        if tmp == _etiqueta:
-            return True
+                return 'ERROR'
         else:
+            return estado_actual
+        
+    def _juntar(self,_index:int, _count:int):
+        try:
+            tmp = ''
+            for i in range(_index, _index + _count):
+                tmp += self.lineas[i]
+            return tmp
+        except:
+            return None
+        
+    def _analizar(self, token, texto):
+        try:
+            count = 0
+            tokem_tmp = ""
+            for i in texto:
+                #CUANDO LA LETRA HAGA MATCH CON EL TOKEN ENTRA
+                #print('COMBINACION -> ',i , '==', token[count])
+                if str(i) == str(token[count]):
+                    tokem_tmp += i  
+                    count += 1 
+                else:
+                    #print('ERROR1')
+                    return False
+                
+            #print(f'********** ENCONTRE - {tokem_tmp} ***************')
+            return True
+        except:
+            #print('ERROR2')
             return False
+        
+    def _digito(self, estado_sig):
+        estado_actual = 'D0'
+        numero = ""
+        while self.lineas[self.index] != "":
+            #print(f'CARACTER - {self.lineas[self.index] } | ESTADO - {estado_actual} | FILA - {self.fila}  | COLUMNA - {self.columna}')
 
-    def Numero(self, _cadena : str):
-        tokens = [
-            L_tokens.TK_MENOR.value,    # <
-            L_tokens.TK_E_NUMERO.value, # Numero
-            L_tokens.TK_MAYOR.value,    # >
-            L_tokens.TK_NUMERO.value,         # 10
-            L_tokens.TK_MENOR.value,    # <
-            L_tokens.TK_BARRAINV.value, # /
-            L_tokens.TK_E_NUMERO.value, # Numero
-            L_tokens.TK_MAYOR.value     # >
-        ]
-        _numero = ""
+            # IDENTIFICAR SALTO DE LINEA
+            if self.lineas[self.index] == '\n':
+                self.fila += 1
+                self.columna =0
+            
+            # PARA SALIRSE
+            elif str(self.lineas[self.index])== '"':
+                self.index -= 1
+                return [estado_sig, numero]
+            elif str(self.lineas[self.index])== ']':
+                self.index -= 1
+                return [estado_sig, numero]
+            elif str(self.lineas[self.index])== '}':
+                self.index -= 1
+                return [estado_sig, numero]
 
-        for i in tokens:
-            try:
-                patron = re.compile(f'^{i}')
-                s = patron.search(_cadena)
-                print("| ", self.linea, " | ", self.columna, " | ", s.group())
-                self.columna += int(s.end())
-                # GUARDAR EL TOKEN
-                if i == L_tokens.TK_NUMERO.value:
-                    _numero = s.group()
-                _cadena = self.quitar(_cadena, s.end())
-                self.aumentarLinea()
-            except:
-                # GUARDAR ERROR
-                print("Ocurrio un error")
-                return {'resultado':_numero, "cadena":_cadena, "Error": True}
-
-        return {'resultado':_numero, "cadena":_cadena, "Error":False}
-
-    def Operacion(self, _cadena : str):
-        tokens = [
-            L_tokens.TK_MENOR.value,        # <
-            L_tokens.TK_E_OPERACION.value,  # Operacion
-            L_tokens.TK_IGUAL.value,              # =
-            "OPERADOR",                     # OPERADOR
-            L_tokens.TK_MAYOR.value,        # >
-            "NUMERO",                       # NUMERO
-            "NUMERO",                       # NUMERO
-            L_tokens.TK_MENOR.value,        # <
-            L_tokens.TK_BARRAINV.value,     # /
-            L_tokens.TK_E_OPERACION.value,  # Operacion
-            L_tokens.TK_MAYOR.value,        # >
-        ]
-        _numero = ""
-        _operador = None
-        for i in tokens:
-            try:
-                if "NUMERO" == i:
-                    if self.esLaetiqueta(_cadena, "<Numero>"):
-                        _result = self.Numero(_cadena)
-                        _cadena = _result['cadena']
-                        if _result['Error']:
-                            # GUARDAR ERROR
-                            print("Ocurrio un error")
-                            return {'resultado':_numero, "cadena":_cadena, "Error": True}
-
-                    elif self.esLaetiqueta(_cadena, "<Operacion="):
-                        _result = self.Operacion(_cadena)
-                        _cadena = _result['cadena']
-                        if _result['Error']:
-                            # GUARDAR ERROR
-                            print("Ocurrio un error")
-                            return {'resultado':_numero, "cadena":_cadena, "Error": True}
+            # VERIFICAR SI ES DECIMAL
+            elif self.lineas[self.index] == '.':
+                token = "."
+                if estado_actual == 'D2' or estado_actual == 'D0':
+                    estado_actual = 'ERROR'
+                elif self.lineas[self.index] != ' ':
+                    text = self._juntar(self.index, len(token))
+                    if self._analizar(token, text):
+                        numero += text
+                        estado_actual = 'D2'
+                        self.index += len(token) - 1
+                        self.columna += len(token) - 1
                     else:
-                        # GUARDAR ERROR
-                        print("Ocurrio un error")
-                        return {'resultado':_numero, "cadena":_cadena, "Error": True}
-                
-                else:
-                    if "OPERADOR" == i:
-                        # SUMA
-                        spatron = re.compile(f'^SUMA')
-                        t = spatron.search(_cadena)
-                        #print("OPERADOR -> ", t)
-                        if t != None:
-                            i = "SUMA"
-                            _operador = L_tokens.TK_OP_SUMA
-
-                        # RESTA
-                        spatron = re.compile(f'^RESTA')
-                        t = spatron.search(_cadena)
-                        if t != None:
-                            i = "RESTA"
-                            _operador = L_tokens.TK_OP_RESTA
-
-                        if _operador == None:
-                            # GUARDAR ERROR
-                            print("Ocurrio un error Operacion")
-                            return {'resultado':_numero, "cadena":_cadena, "Error": True}
-
-                    patron = re.compile(f'^{i}')
-                    s = patron.search(_cadena)
-                    # GUARDAR EL TOKEN
-                    print("| ", self.linea, " | ", self.columna, " | ", s.group())
-                    self.columna += int(s.end())
-                    _cadena = self.quitar(_cadena, s.end())
-                self.aumentarLinea()
-            except:
-                # GUARDAR ERROR
-                print("Ocurrio un error")
-                return {'resultado':_numero, "cadena":_cadena, "Error": True}
-
-        # NUMERO1 OPERADOR NUMERO2
-        return {'resultado':_numero, "cadena":_cadena, "Error":False}
-
-    def Tipo(self, _cadena : str):
-        tokens = [
-            L_tokens.TK_MENOR.value,        # <
-            L_tokens.TK_E_TIPO.value,       # Tipo
-            L_tokens.TK_MAYOR.value,        # >
-            "OPERACIONES",                  # OPERACIONES
-            L_tokens.TK_MENOR.value,        # <
-            L_tokens.TK_BARRAINV.value,     # /
-            L_tokens.TK_E_TIPO.value,       # Tipo
-            L_tokens.TK_MAYOR.value,        # >
-        ]
-        _numero = ""
-
-        for i in tokens:
-            try:
-                
-                if "OPERACIONES" == i:
-                    salida = True
-                    while salida:
-                        print("--------------------------------")
-                        _result = self.Operacion(_cadena)
-                        _cadena = _result['cadena']
-                        if _result['Error']:
-                            # GUARDAR ERROR
-                            print("Ocurrio un error")
+                        estado_actual = 'ERROR'
                         
-                        if self.esLaetiqueta(_cadena, "</Tipo>"):
-                            salida = False
+            # ************************
+            #         ESTADOS
+            # ************************
+
+            # D0 -> [0-9] D0 
+            elif estado_actual == 'D0' or estado_actual == 'D1':
+                if self.lineas[self.index] != ' ':
+                    estado_actual = 'ERROR'
+                    for i in ['0','1','2','3','4','5','6','7','8','9']:
+                        token = i
+                        text = self._juntar(self.index, len(token))
+                        if self._analizar(token, text):
+                            numero += text
+                            estado_actual = 'D1'
+                            break
+
+            # D2 -> [0-9] D2
+            elif estado_actual == 'D2':
+                if self.lineas[self.index] != ' ':
+                    estado_actual = 'ERROR'
+                    for i in ['0','1','2','3','4','5','6','7','8','9']:
+                        text = self._juntar(self.index, len(i))
+                        if self._analizar(i, text):
+                            numero += text
+                            estado_actual = 'D2'
+                            break
+
+            # ERRORES 
+            if estado_actual == 'ERROR':
+                return ['ERROR', -1]
+            
+            #INCREMENTAR POSICION
+            if self.index < len(self.lineas) - 1:
+                self.index +=1
+            else:
+                break
+    
+    def _operaciones(self, estado_sig):
+        estado_actual = 'S1'
+        hijo_derecho = ""
+        hijo_izquierdo = ""
+        operador = ""
+        while self.lineas[self.index] != "":
+            #print(f'CARACTER OP - {self.lineas[self.index] } | ESTADO - {estado_actual} | FILA - {self.fila}  | COLUMNA - {self.columna}')
+            
+            # IDENTIFICAR SALTO DE LINEA
+            if self.lineas[self.index] == '\n':
+                self.fila += 1
+                self.columna =0
+
+            # ************************
+            #         ESTADOS
+            # ************************
+
+            # S1 -> "Operacion" S2
+            elif estado_actual == 'S1':
+                estado_actual = self._token('"Operacion"', 'S1', 'S2')
+                
+            # S2 -> : S3
+            elif estado_actual == 'S2':
+                estado_actual = self._token(':', 'S2', 'S3')
+
+            # S3 -> OPERADOR S4
+            elif estado_actual == 'S3':
+                operadores = ['"Suma"','"Resta"','"Multiplicacion"','"Division"', '"Potencia"','"Raiz"','"Inverso"', '"Seno"','"Coseno"','"Tangente"','"Mod"']
+                for i in operadores:
+                    estado_actual = self._token(i, 'S3', 'S4')
+                    if estado_actual != 'ERROR':
+                        operador = i
+                        break
+
+            # S4 -> "Valor1" S5
+            elif estado_actual == 'S4':
+                estado_actual = self._token('"Valor1"', 'S4', 'S5')
+
+            # S5 -> : S6
+            elif estado_actual == 'S5':
+                estado_actual = self._token(':', 'S5', 'S6')
+
+            # S6 -> DIGITO S9 
+            #    | [ S7
+            elif estado_actual == 'S6':
+                estado_actual = self._token('[','S6','S7')
+                if estado_actual == 'ERROR':
+                    estado_actual = 'S9'
+                    a = self._digito('S9')
+                    if "ERROR" == a[0]:
+                        estado_actual = 'ERROR'
+                    elif a[0] == 'S9':
+                        hijo_izquierdo = a[1]
+
+            # S7 -> S1 S8
+            elif estado_actual == 'S7':
+                a = self._operaciones('S8')
+                estado_actual = a[0]
+                hijo_izquierdo = a[1]
+
+            # S8 -> ] S9
+            elif estado_actual == 'S8':
+                estado_actual = self._token(']','S8','S9')
+                
+            # S9 -> "Valor2" S10
+            elif estado_actual == 'S9':
+                if operador == '"Inverso"' or operador == '"Seno"' or operador =='"Coseno"' or operador=='"Tangente"':
+                    self.index -= 1
+                    # REALIZAR LA OPERACION ARITMETICA Y DEVOLVER UN SOLO VALOR
+                    print("\t*****OPERACION ARITMETICA*****")
+                    print('\t',operador ,'(',hijo_izquierdo ,')' )
+                    print('\t*******************************\n')
+                    op = operador +'('+hijo_izquierdo +')'
+                    return ['S8', op]  
                 else:
-                    patron = re.compile(f'^{i}')
-                    s = patron.search(_cadena)
-                    # GUARDAR EL TOKEN
-                    print("| ", self.linea, " | ", self.columna, " | ", s.group())
-                    self.columna += int(s.end())
-                    _cadena = self.quitar(_cadena, s.end())
-                self.aumentarLinea()
-            except:
-                # GUARDAR ERROR
-                print("Ocurrio un error")
-                return {'resultado':_numero, "cadena":_cadena, "Error": True}
+                    estado_actual = self._token('"Valor2"', 'S9', 'S10')
 
-        return {'resultado':_numero, "cadena":_cadena, "Error": False}
+            # S10 -> : S11
+            elif estado_actual == 'S10':
+                estado_actual = self._token(':', 'S10', 'S11')
 
-    def compile(self):
-        # LEEMOS EL ARCHIVO DE ENTRADA
-        absolutepath = os.path.abspath(__file__)
-        Directorio = os.path.dirname(absolutepath) 
-        #file = Directorio + r"\{}".format(Filename)  
-        file = Directorio + r"/entrada.txt"  
-        archivo = open(file, "r")
-        contenido = archivo.readlines()
-        archivo.close()
+            # S11 -> DIGITO S14 
+            #    | [ S12
+            elif estado_actual == 'S11':
+                estado_actual = self._token('[','S11','S12')
+                if estado_actual == 'ERROR':
+                    estado_actual = 'S14'
+                    a = self._digito('S14')
+                    if "ERROR" == a[0]:
+                        estado_actual = 'ERROR'
+                    elif 'S14' == a[0]:
+                        hijo_derecho = a[1]
+                        # REALIZAR LA OPERACION ARITMETICA Y DEVOLVER UN SOLO VALOR
+                        print("\t*****OPERACION ARITMETICA*****")
+                        print('\t',hijo_izquierdo , operador, hijo_derecho)
+                        print('\t*******************************\n')
+                        op = hijo_izquierdo + operador + hijo_derecho
+                        return [estado_sig, op]  
 
-        
+            # S12 -> S1 S13
+            elif estado_actual == 'S12':
+                estado_actual = 'S13'
+                a = self._operaciones('S13')
+                hijo_derecho = a[1]
+                if "ERROR" == a[0]:
+                    estado_actual = 'ERROR'
 
-        # LIMPIAR MI ENTRADA
-        nueva_cadena = ""
-        lista_cadena = []
+            # S13 -> ] S14
+            elif estado_actual == 'S13':
+                estado_actual = self._token(']','S13','S14')
 
-        
+                # REALIZAR LA OPERACION ARITMETICA Y DEVOLVER UN SOLO VALOR
+                print("\t*****OPERACION ARITMETICA*****")
+                print('\t',hijo_izquierdo , operador, hijo_derecho)
+                print('\t*******************************\n')
+                op = hijo_izquierdo + operador + hijo_derecho
+                return [estado_sig, op]  
 
-        for i in contenido:
-            i = i.replace(' ', '') #QUITANDO ESPACIOS
-            i = i.replace('\n', '') # QUITANDO SALTOS DE LINEA
-            if i != '':
-                nueva_cadena += i
-                lista_cadena.append(i)
+            # ERRORES 
+            if estado_actual == 'ERROR':
+                print("********************************")
+                print("\tERROR")
+                print("********************************")
+                # ERROR
+                print(self.lineas[self.index], "fila ",self.fila, "Columna ",self.columna)
+                self.guardarErrores(self.lineas[self.index], self.fila, self.columna)
+                return ['ERROR', -1]
+            
+            #INCREMENTAR POSICION
+            if self.index < len(self.lineas) - 1:
+                self.index += 1
+            else:
+                break
 
-        print(nueva_cadena)
-        print(lista_cadena)
+    def _compile(self):
+        estado_actual = 'S0'
+        while self.lineas[self.index] != "":
+            #print(f'CARACTER11 - {self.lineas[self.index] } | ESTADO - {estado_actual} | FILA - {self.fila}  | COLUMNA - {self.columna}')
+            
+            # IDENTIFICAR SALTO DE LINEA
+            if self.lineas[self.index] == '\n':
+                self.fila += 1
+                self.columna =0
 
-        self.lista_cadena = lista_cadena
+            # ************************
+            #         ESTADOS
+            # ************************
+            
+            # S0 -> { S1
+            elif estado_actual == 'S0':
+                estado_actual = self._token('{', 'S0', 'S1')
 
-        print(self.Tipo(nueva_cadena))
+            # S1 -> "Operacion" S2
+            elif estado_actual == 'S1':
+                if self.lineas[self.index] != " ":
+                    a = self._operaciones('S14')
+                    estado_actual = a[0]
+                    print("\t*****RESULTADO*****")
+                    print('\t',a[1])
+                    print('\t*******************************\n')
+                    estado_actual = a[0]
+            
+            # S14 -> }
+            elif estado_actual == 'S14':
+                #print("ESTO DE ULTIMO")
+                estado_actual = self._token('}', 'S14', 'S15')
+            
+            # S15 -> ,
+            elif estado_actual == 'S15':
+                if self.lineas[self.index] != ' ':
+                    estado_actual = self._token(',', 'S16', 'S0')
+                    
+            elif estado_actual == 'S16':  
+                break
+            
+            # ERRORES 
+            if estado_actual == 'ERROR':
+                #print('\t AQUI OCURRIO UN ERROR')
+                estado_actual = 'S0'
+            
+            #INCREMENTAR POSICION
+            if self.index < len(self.lineas) - 1:
+                self.index +=1
+            else:
+                break
+
+    def guardarErrores(self, token, fila, columna):
+        self.ListaErrores.append({"token":token, "fila": fila, "columna":columna})
 
 
-Analizador().compile()
-
-
-#8+9*(8-9-6)
+    def GuardarErrores(self):
+        if self.ListaErrores:
+            with open("ListaErrores.txt", "w") as f:
+                pass
+                f.close
+            
+            for diccionario in self.ListaErrores:
+                # print(str(diccionario["token"]))
+                # print(str(diccionario["fila"]))
+                # print(str(diccionario["columna"]))
+                with open("ListaErrores.txt", "w") as f:
+                    f.write("Error en "+ str(diccionario["token"]) + " Fila " + str(diccionario["fila"]) + " Columna" + str(diccionario["columna"])+"\n")
+                f.close()

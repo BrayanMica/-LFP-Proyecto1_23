@@ -1,21 +1,24 @@
 import os
+from analizador import Analizador
 from tkinter import *
+import tkinter as tk
+from tkinter import filedialog
 import tkinter.messagebox
 from turtle import color
 import webbrowser
 
 class Myapp():
 	def __init__(self):
+		self.texto = ''
 		# Creando ventana principal
-		ventana = Tk()
+		ventana = tk.Tk()
 		ventana.title("Ventana principal")
-		ventana.config(bg="skyblue")
+		ventana.config(bg="purple")
 
 		# Icono de la ventana
 		absolutepath = os.path.abspath(__file__)
 		Directorio = os.path.dirname(absolutepath)  
-		path = Directorio + r'/img/logo.png'
-		print(path)
+		path = Directorio + r'/img/logo.png'	
 		icon = PhotoImage(file=path)
 		ventana.wm_iconphoto(True, icon)
 
@@ -36,15 +39,14 @@ class Myapp():
   		# Objetos de la ventana principal
 		LabelEditor = Label(ventana,text="Editor")
 		LabelEditor.grid(row=1, column=1,sticky="w",padx=10,pady=10)
-		CuadroEditor = Text(ventana, width=60, height=20)
-		CuadroEditor.grid(row=2, column=1,sticky="w",padx=10,pady=10)
+		self.CuadroEditor = tk.Text(ventana, width=60, height=20)
+		self.CuadroEditor.grid(row=2, column=1,sticky="w",padx=10,pady=10)
 
 		# Sub menus desplegables
 		# submenu de archivo
 		Archivo = Menu(menu, tearoff=0)
 		Archivo.add_command(label="Abrir", command=self.Abrir)
 		Archivo.add_command(label="Guardar", command=self.Guardar)
-		Archivo.add_command(label="Guardar como...", command=self.GuardarComo)
 		Archivo.add_command(label="Analizar", command=self.Analizar)
 		Archivo.add_command(label="Errores", command=self.Errores)
 		Archivo.add_separator()
@@ -62,34 +64,46 @@ class Myapp():
 		ventana.mainloop()
   
   	# Lectura del archivo
-	def Abrir(self):
-		# LEEMOS EL ARCHIVO DE ENTRADA
-		absolutepath = os.path.abspath(__file__)
-		Directorio = os.path.dirname(absolutepath) 
-		#file = Directorio + r"\{}".format(Filename)  
-		file = Directorio + r"/entrada.txt"  
-		archivo = open(file, "r")
-		if archivo:
-			tkinter.messagebox.showinfo(title="Cargando archivo", message=("El archivo se cargo correctamente a memoria"))
-			archivo.close()  
+	def Abrir(self):  
+		file = filedialog.askopenfilename(defaultextension=".json",
+		filetypes=[("Archivos de texto", "*.json")])
+
+		if file:
+			with open(file, 'r') as archivo:
+				# 2. Leer el contenido del archivo
+				lineas = archivo.readlines()
+				# 3. Cerrar el archivo
+				archivo.close()
+				self.CuadroEditor.delete(1.0, tk.END)
+				for linea in lineas:
+					self.CuadroEditor.insert(tk.END,linea)
+					self.texto = self.texto + linea
+				tkinter.messagebox.showinfo(title="Cargando archivo", message=("El archivo se cargo correctamente a memoria"))
 		else:
-			tkinter.messagebox.showinfo(title="Cargando archivo", message=("El archivo no se cargo a memoria"))  
+			tkinter.messagebox.showinfo(title="Cargando archivo", message=("No seleccionaste ningun archivo"))  
+			
 	
 	# Guardar archivo
 	def Guardar(self):
-		pass
-	
-	# Guardar el archivo como...
-	def GuardarComo(self):
-		pass
+		archivo = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("Archivos de texto", "*.json")])
+		if archivo:
+			with open(archivo, 'w') as f:
+				text = self.CuadroEditor.get('1.0', tk.END)
+				f.write(text)
 
 	# Analizar el archivo de entrada
 	def Analizar(self):
-		pass
-	
+		if self.texto:
+			self.analizar = Analizador(self.texto)
+			self.analizar._compile()
+			tkinter.messagebox.showinfo(title="Analizando el Texto", message=("El texto fue analizado correctamente"))	
+		else:
+			tkinter.messagebox.showinfo(title="Analizando el Texto", message=("No existe texto para analizar"))	
+      
+      
 	# Errores del ultimo archivo
 	def Errores(self):
-		pass
+		self.analizar.GuardarErrores()
 	
 	# Funciones de ayuda
 	# Abriendo un pdf del manual de usuario
