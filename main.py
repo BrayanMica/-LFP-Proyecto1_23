@@ -104,6 +104,7 @@ class Myapp():
 	# Errores del ultimo archivo
 	def Errores(self):
 		self.analizar.GuardarErrores()
+		self.texto = ''
 	
 	# Funciones de ayuda
 	# Abriendo un pdf del manual de usuario

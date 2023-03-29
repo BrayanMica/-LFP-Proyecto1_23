@@ -1,1 +1,5 @@
-Error en / Fila 43 Columna0
+-----------------Listado de Errores-----------------
+{}
+{}
+{}
+{}

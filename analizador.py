@@ -1,4 +1,5 @@
 import os
+import tkinter
 
 class Analizador:
     def __init__(self, entrada:str):
@@ -258,6 +259,8 @@ class Analizador:
                 break
 
     def _compile(self):
+        self.fila = 1 #FILA ACTUAL
+        self.columna = 1 #COLUMNA ACTUAL
         estado_actual = 'S0'
         while self.lineas[self.index] != "":
             #print(f'CARACTER11 - {self.lineas[self.index] } | ESTADO - {estado_actual} | FILA - {self.fila}  | COLUMNA - {self.columna}')
@@ -265,7 +268,7 @@ class Analizador:
             # IDENTIFICAR SALTO DE LINEA
             if self.lineas[self.index] == '\n':
                 self.fila += 1
-                self.columna =0
+                self.columna +=1
 
             # ************************
             #         ESTADOS
@@ -314,15 +317,22 @@ class Analizador:
 
 
     def GuardarErrores(self):
+        absolutepath = os.path.abspath(__file__)
+        Directorio = os.path.dirname(absolutepath) 
+        path = Directorio + r"/ListaErrores.txt"
         if self.ListaErrores:
-            with open("ListaErrores.txt", "w") as f:
-                pass
-                f.close
-            
-            for diccionario in self.ListaErrores:
-                # print(str(diccionario["token"]))
-                # print(str(diccionario["fila"]))
-                # print(str(diccionario["columna"]))
-                with open("ListaErrores.txt", "w") as f:
-                    f.write("Error en "+ str(diccionario["token"]) + " Fila " + str(diccionario["fila"]) + " Columna" + str(diccionario["columna"])+"\n")
-                f.close()
+            # Abre un archivo en modo de escritura
+            with open(path, "w") as f:
+                f.truncate(0)
+                f.write("-----------------Listado de Errores-----------------\n")
+                for diccionario in self.ListaErrores:
+                    f.write(str(diccionario)+"\n")
+                    diccionario.clear()
+            tkinter.messagebox.showinfo(title="Analizador de errores", message=("Existen errores en este texto\nRevisa el archivo ListaErrores.txt\nPara visualizar"))	
+        else:
+            with open(path, "w") as f:
+                f.truncate(0)
+                f.write("-----------------Listado de Errores-----------------\n")
+            tkinter.messagebox.showinfo(title="Analizador de errores", message=("No existen errores en el texto\nRevisa el archivo ListaErrores.txt\nPara visualizar"))	
+                
+        
