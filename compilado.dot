@@ -1,29 +1,6 @@
 digraph R{
     rankdir=TB;
-
-    # operaciones por separado hacer con un ciclo
-    # Ya tiene que estar calculada la operacion
-    a1[margin=0 fontcolor=red fillcolor=yellow fontsize=32 width=0.5 shape=circle style=filled label="suma \n 9.82"];
-    a2[margin=0 fontcolor=red fillcolor=yellow fontsize=32 width=0.5 shape=circle style=filled label="4.50"];
-    a3[margin=0 fontcolor=red fillcolor=yellow fontsize=32 width=0.5 shape=circle style=filled label="5.32"];
-    a1->a2[color="blue"];
-    a1->a3[color="blue"];
-    
-    a4[margin=0 fontcolor=red fillcolor=yellow fontsize=32 width=0.5 shape=circle style=filled label="Resta \n -995.5"];
-    a5[margin=0 fontcolor=red fillcolor=yellow fontsize=32 width=0.5 shape=circle style=filled label="4.50"];
-    a6[margin=0 fontcolor=red fillcolor=yellow fontsize=32 width=0.5 shape=circle style=filled label="Potencia \n 1000"];
-    a7[margin=0 fontcolor=red fillcolor=yellow fontsize=32 width=0.5 shape=circle style=filled label="10"];
-    a8[margin=0 fontcolor=red fillcolor=yellow fontsize=32 width=0.5 shape=circle style=filled label="3"];
-    a4->a5[color="blue"];
-    a4->a6[color="blue"];
-    a6->a7[color="blue"];
-    a6->a8[color="blue"];
-
-    a9[margin=0 fontcolor=red fillcolor=yellow fontsize=32 width=0.5 shape=circle style=filled label="Suma \n 6.32"];
-    a10[margin=0 fontcolor=red fillcolor=yellow fontsize=32 width=0.5 shape=circle style=filled label="Seno \n 1"];
-    a11[margin=0 fontcolor=red fillcolor=yellow fontsize=32 width=0.5 shape=circle style=filled label="5.32"];
-    a12[margin=0 fontcolor=red fillcolor=yellow fontsize=32 width=0.5 shape=circle style=filled label="90"];
-    a9->a10[color="blue"];
-    a9->a11[color="blue"];
-    a10->a12[color="blue"];
+"Resta" -> "60"
+ "Resta" -> "30"
+                      
 }

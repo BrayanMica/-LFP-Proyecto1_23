@@ -1,6 +1,12 @@
 import os
 import tkinter
+import graphviz
 
+from numpy import double
+
+#from graficador import *
+
+ListaGrafo = []
 class Analizador:
     def __init__(self, entrada:str):
         self.lineas = entrada #ENTRADA
@@ -8,7 +14,7 @@ class Analizador:
         self.fila = 0 #FILA ACTUAL
         self.columna = 0 #COLUMNA ACTUAL
         self.ListaErrores = [] # LISTA PARA GUARDAR ERRORES
-
+        
     def _token(self, token:str, estado_actual:str, estado_sig:str):
         if self.lineas[self.index] != " ":
             text = self._juntar(self.index, len(token))
@@ -123,8 +129,10 @@ class Analizador:
                 self.index +=1
             else:
                 break
-    
+
     def _operaciones(self, estado_sig):
+        
+        
         estado_actual = 'S1'
         hijo_derecho = ""
         hijo_izquierdo = ""
@@ -197,6 +205,7 @@ class Analizador:
                     print('\t',operador ,'(',hijo_izquierdo ,')' )
                     print('\t*******************************\n')
                     op = operador +'('+hijo_izquierdo +')'
+                    
                     return ['S8', op]  
                 else:
                     estado_actual = self._token('"Valor2"', 'S9', 'S10')
@@ -221,7 +230,115 @@ class Analizador:
                         print('\t',hijo_izquierdo , operador, hijo_derecho)
                         print('\t*******************************\n')
                         op = hijo_izquierdo + operador + hijo_derecho
+                        # GRAFICA DE OPERACION
+                        class Nodo:
+                            def __init__(self,_node):
+                                self.node = _node
+                                self.left = None
+                                self.right = None
+                        # Cuando nosotros realizamos una operacion con
+                        # valor 1 # valor 2
+                        # Decimos que valor 1 es nuestro nodo hijo izquierdo
+                        # Decimos que valor 2 es nuestro nodo hijo derecho
+                        #     5 + 8 
+                        # Definimos un nodo raiz
+                        class datos:
+                            def __init__(self):
+                                self.operaciones = ''
+                                self.hijo_i = 0
+                                self.hijo_d = 0
+                                
+                            # Getter para Operador
+                            @property
+                            def  operador(self):
+                                return self.operaciones
+                            
+                            # Setter para operador
+                            @operador.setter
+                            def operador(self,valor):
+                                self.operaciones = valor
+
+                            # Getter para hijo izquierdo
+                            @property
+                            def  h_izq(self):
+                                return self.hijo_i
+                            
+                            # Setter para hijo izquierdo
+                            @h_izq.setter
+                            def h_izq(self,valor):
+                                self.hijo_i = valor
+                                
+                            # Getter para hijo derecho
+                            @property
+                            def  h_der(self):
+                                return self.hijo_d
+                            
+                            # Setter para hijo derecho
+                            @h_der.setter
+                            def h_der(self,valor):
+                                self.hijo_d = valor
+                                
+                        dato = datos()
+                        self.raiz = Nodo(None)
+                        dato.operador=operador
+                        
+                        resultado=0
+                        if(str(operador)=='"Suma"'):
+                            resultado = double(hijo_izquierdo) + double(hijo_derecho)
+                            print(str(resultado))
+                        elif (str(operador)=='"Resta"'):
+                            resultado = double(hijo_izquierdo) - double(hijo_derecho)
+                            print(str(resultado))
+                        elif (str(operador)=='"Multiplicacion"'):
+                            resultado = double(hijo_izquierdo) * double(hijo_derecho)
+                            print(str(resultado))
+                        elif (str(operador)=='"Division"'):
+                            resultado = double(hijo_izquierdo) / double(hijo_derecho)
+                            print(str(resultado))
+    
+                        self.raiz.node = str(operador) + ' = '+ str(double(resultado))
+                        self.raiz.left = Nodo(hijo_izquierdo)
+                        self.raiz.right = Nodo(hijo_derecho)
+                        operador=operador.strip('"') + ' = ' + str(resultado)
+                        def imprimir(_nodo: Nodo):
+                            if(_nodo.left != None):
+                                #print("RECURSIVIDAD IZQ")
+                                imprimir(_nodo.left)
+                                print(f' "{operador}" -> "{_nodo.left.node}"')
+                                ListaGrafo.append(f' "{operador}" -> "{_nodo.left.node}"')
+                            if(_nodo.right != None):
+                                #print("RECURSIVIDAD DER")
+                                imprimir(_nodo.right)
+                                print(f' "{operador}" -> "{_nodo.right.node}"')
+                                ListaGrafo.append(f' "{operador}" -> "{_nodo.right.node}"') 
+                        imprimir(self.raiz)
+                        # Creacion de archivo operacion.dot
+                        absolutepath = os.path.abspath(__file__)
+                        Directorio = os.path.dirname(absolutepath) 
+                        file = Directorio + "/"+"operacion.dot"
+                        crear = open(file,"w")
+                        cadena =""
+                        
+                        for k,operacion in enumerate(ListaGrafo):     
+                            cadena = cadena+ operacion +'''\n'''
+
+                        crear.write('''digraph R {\n rankdir=LR \n'''+cadena+'''}''')                
+                        crear.close()
+
+                        #Cargar archivo .dot
+                        absolutepath = os.path.abspath(__file__)
+                        Directorio = os.path.dirname(absolutepath) 
+                        ruta_actual = Directorio + "/"+"operacion.dot"
+                        with open(ruta_actual) as f:
+                            dot_graph = f.read()
+
+                        # Generando imagen del grafico en formato PNG y guardarlo la misma ruta de hubicacion
+                        graph = graphviz.Source(dot_graph)
+                        graph.format = "svg"
+                        graph.render(filename="operacion")
                         return [estado_sig, op]  
+                    
+        
 
             # S12 -> S1 S13
             elif estado_actual == 'S12':
@@ -235,20 +352,22 @@ class Analizador:
             elif estado_actual == 'S13':
                 estado_actual = self._token(']','S13','S14')
 
-                # REALIZAR LA OPERACION ARITMETICA Y DEVOLVER UN SOLO VALOR
+                #REALIZAR LA OPERACION ARITMETICA Y DEVOLVER UN SOLO VALOR
                 print("\t*****OPERACION ARITMETICA*****")
                 print('\t',hijo_izquierdo , operador, hijo_derecho)
                 print('\t*******************************\n')
                 op = hijo_izquierdo + operador + hijo_derecho
-                return [estado_sig, op]  
+                # GRAFICA DE OPERACION
+                
+                return [estado_sig, op] 
 
             # ERRORES 
             if estado_actual == 'ERROR':
-                print("********************************")
-                print("\tERROR")
-                print("********************************")
-                # ERROR
-                print(self.lineas[self.index], "fila ",self.fila, "Columna ",self.columna)
+                # print("********************************")
+                # print("\tERROR")
+                # print("********************************")
+                # # ERROR
+                # print(self.lineas[self.index], "fila ",self.fila, "Columna ",self.columna)
                 self.guardarErrores(self.lineas[self.index], self.fila, self.columna)
                 return ['ERROR', -1]
             
@@ -257,7 +376,7 @@ class Analizador:
                 self.index += 1
             else:
                 break
-
+        
     def _compile(self):
         self.fila = 1 #FILA ACTUAL
         self.columna = 1 #COLUMNA ACTUAL
@@ -283,9 +402,9 @@ class Analizador:
                 if self.lineas[self.index] != " ":
                     a = self._operaciones('S14')
                     estado_actual = a[0]
-                    print("\t*****RESULTADO*****")
-                    print('\t',a[1])
-                    print('\t*******************************\n')
+                    # print("\t*****RESULTADO*****")
+                    # print('\t',a[1])
+                    # print('\t*******************************\n')
                     estado_actual = a[0]
             
             # S14 -> }
@@ -315,7 +434,6 @@ class Analizador:
     def guardarErrores(self, token, fila, columna):
         self.ListaErrores.append({"token":token, "fila": fila, "columna":columna})
 
-
     def GuardarErrores(self):
         absolutepath = os.path.abspath(__file__)
         Directorio = os.path.dirname(absolutepath) 
@@ -334,5 +452,4 @@ class Analizador:
                 f.truncate(0)
                 f.write("-----------------Listado de Errores-----------------\n")
             tkinter.messagebox.showinfo(title="Analizador de errores", message=("No existen errores en el texto\nRevisa el archivo ListaErrores.txt\nPara visualizar"))	
-                
-        
+

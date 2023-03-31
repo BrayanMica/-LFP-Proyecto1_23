@@ -94,12 +94,12 @@ class Myapp():
 	# Analizar el archivo de entrada
 	def Analizar(self):
 		if self.texto:
+			self.texto = self.texto.strip("{}")
 			self.analizar = Analizador(self.texto)
 			self.analizar._compile()
 			tkinter.messagebox.showinfo(title="Analizando el Texto", message=("El texto fue analizado correctamente"))	
 		else:
 			tkinter.messagebox.showinfo(title="Analizando el Texto", message=("No existe texto para analizar"))	
-      
       
 	# Errores del ultimo archivo
 	def Errores(self):

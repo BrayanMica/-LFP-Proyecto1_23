@@ -1,0 +1,11 @@
+digraph R {
+ rankdir=LR 
+ "Suma = 10.0" -> "6.5"
+ "Suma = 10.0" -> "3.5"
+ "Resta = 30.0" -> "60"
+ "Resta = 30.0" -> "30"
+ "Division = 3.0" -> "60"
+ "Division = 3.0" -> "20"
+ "Multiplicacion = 54.0" -> "6"
+ "Multiplicacion = 54.0" -> "9"
+}
