@@ -1,2 +1,1 @@
-# LFP_Proyecto1_201907343
-LFP_Proyecto1_201907343_PrimerSemestre_2023
+# LFP_Proyecto1
